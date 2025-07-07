@@ -1,2 +1,6 @@
-package ir.maktab127.homeservicessystem.entity;public class SpecialistStatus {
+package ir.maktab127.homeservicessystem.entity.enums;
+
+public enum SpecialistStatus {
+    AWAITING_CONFIRMATION,
+    CONFIRMED
 }

@@ -1,4 +1,4 @@
-package org.example.homeservicessystem;
+package ir.maktab127.homeservicessystem;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
