@@ -19,5 +19,5 @@ public class MainService {
 
     @OneToMany(mappedBy = "mainService",cascade = CascadeType.ALL,fetch = FetchType.LAZY
     )
-    private Set<SubService> subservices;
+    private Set<SubService> subServices;
 }

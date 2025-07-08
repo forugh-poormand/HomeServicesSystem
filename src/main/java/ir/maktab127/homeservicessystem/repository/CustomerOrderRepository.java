@@ -8,8 +8,8 @@ import org.springframework.data.repository.CrudRepository;
 import java.util.List;
 
 public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Long> {
-   public List<CustomerOrder> findByCustomerId(Long customerId);
-   public List<CustomerOrder> findByOrderStatusAndSubServiceId(OrderStatus orderStatus, Long subServiceId);
+   List<CustomerOrder> findByCustomerId(Long customerId);
+   List<CustomerOrder> findByOrderStatusAndSubServiceIdIn(OrderStatus orderStatus, List<Long> subServiceIds);
 
 
 }

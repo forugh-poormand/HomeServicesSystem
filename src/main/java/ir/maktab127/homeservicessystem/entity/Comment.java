@@ -8,17 +8,17 @@ import lombok.Setter;
 @Setter
 @Getter
 public class Comment {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
+    private Integer score;
+
     @Lob
     private String text;
 
-
     @OneToOne
-    @JoinColumn(name = "order_id",referencedColumnName = "id",updatable = false)
+    @JoinColumn(name = "order_id", referencedColumnName = "id", unique = true)
     private CustomerOrder order;
-
 }
