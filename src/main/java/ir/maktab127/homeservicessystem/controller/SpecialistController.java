@@ -13,10 +13,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/specialists")
-@RequiredArgsConstructor
+
 public class SpecialistController {
 
     private final SpecialistService specialistService;
+
+    public SpecialistController(SpecialistService specialistService) {
+        this.specialistService = specialistService;
+    }
 
     @PostMapping(value = "/register", consumes = "multipart/form-data")
     public ResponseEntity<UserResponseDto> register(

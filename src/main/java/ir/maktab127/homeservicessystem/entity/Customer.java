@@ -18,5 +18,4 @@ public class Customer extends Person {
     @OneToMany (mappedBy = "customer")
     private Set<CustomerOrder> orders;
 
-    private Set<Comment> comments;
 }

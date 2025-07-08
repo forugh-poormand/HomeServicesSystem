@@ -14,10 +14,13 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
-@RequiredArgsConstructor
+
 public class AdminController {
 
     private final AdminService adminService;
+    public AdminController(AdminService adminService) {
+        this.adminService = adminService;
+    }
 
     @PostMapping("/services/main")
     public ResponseEntity<?> createMainService(@RequestBody MainServiceDto dto) {

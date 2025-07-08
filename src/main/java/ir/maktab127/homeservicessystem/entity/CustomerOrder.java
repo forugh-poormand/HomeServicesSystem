@@ -32,7 +32,7 @@ public class CustomerOrder {
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status = OrderStatus.WAITING_FOR_SUGGESTIONS;
-
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;

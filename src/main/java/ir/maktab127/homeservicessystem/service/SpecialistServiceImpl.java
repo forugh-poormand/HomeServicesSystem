@@ -107,7 +107,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         List<Long> subServiceIds = specialist.getExpertIn().stream()
                 .map(SubService::getId)
                 .collect(Collectors.toList());
-        return orderRepository.findByOrderStatusAndSubServiceIdIn(OrderStatus.WAITING_FOR_SUGGESTIONS, subServiceIds);
+        return orderRepository.findByStatusAndSubServiceIdIn(OrderStatus.WAITING_FOR_SUGGESTIONS, subServiceIds);
     }
 
     @Override

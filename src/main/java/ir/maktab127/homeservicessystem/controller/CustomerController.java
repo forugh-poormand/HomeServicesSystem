@@ -11,11 +11,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/customers")
-@RequiredArgsConstructor
+
 public class CustomerController {
 
     private final CustomerService customerService;
+
+    public CustomerController(CustomerService customerService) {
+        this.customerService = customerService;
+    }
 
     @PostMapping("/register")
     public ResponseEntity<UserResponseDto> register(@Valid @RequestBody UserRegistrationDto dto) {
