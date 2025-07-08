@@ -8,6 +8,7 @@ import ir.maktab127.homeservicessystem.entity.Person;
 import ir.maktab127.homeservicessystem.entity.Specialist;
 
 public class UserMapper {
+
     public static Customer toCustomer(UserRegistrationDto dto) {
         Customer customer = new Customer();
         customer.setFirstName(dto.firstName());
@@ -23,7 +24,8 @@ public class UserMapper {
         specialist.setLastName(dto.lastName());
         specialist.setEmail(dto.email());
         specialist.setPassword(dto.password());
-        specialist.setProfilePicture(dto.profilePicture());
+        // Note: profilePicture is NOT set here.
+        // This is handled in the service layer from the MultipartFile.
         return specialist;
     }
 
