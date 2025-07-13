@@ -6,6 +6,8 @@ import ir.maktab127.homeservicessystem.dto.mapper.SuggestionMapper;
 import ir.maktab127.homeservicessystem.dto.mapper.UserMapper;
 import ir.maktab127.homeservicessystem.entity.*;
 import ir.maktab127.homeservicessystem.entity.enums.OrderStatus;
+import ir.maktab127.homeservicessystem.entity.enums.SpecialistStatus;
+import ir.maktab127.homeservicessystem.entity.enums.TransactionType;
 import ir.maktab127.homeservicessystem.exceptions.DuplicateResourceException;
 import ir.maktab127.homeservicessystem.exceptions.InvalidOperationException;
 import ir.maktab127.homeservicessystem.exceptions.ResourceNotFoundException;
@@ -15,10 +17,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +37,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final SuggestionRepository suggestionRepository;
     private final CommentRepository commentRepository;
     private final SpecialistRepository specialistRepository;
+    private final TransactionRepository transactionRepository;
 
     @Override
     public Customer register(UserRegistrationDto dto) {
@@ -130,7 +135,35 @@ public class CustomerServiceImpl implements CustomerService {
         if (order.getStatus() != OrderStatus.STARTED) {
             throw new InvalidOperationException("Order must be in STARTED state to be completed.");
         }
+
         order.setStatus(OrderStatus.DONE);
+        order.setCompletionDate(LocalDateTime.now());
+
+        // بخش جدید: محاسبه و اعمال جریمه تاخیر
+        Suggestion selectedSuggestion = order.getSuggestions().stream()
+                .filter(s -> s.getSpecialist().equals(order.getSelectedSpecialist()))
+                .findFirst()
+                .orElseThrow(() -> new InvalidOperationException("Selected specialist's suggestion not found."));
+
+        LocalDateTime expectedEndTime = selectedSuggestion.getStartTime().plusHours(selectedSuggestion.getDurationInHours());
+
+        if (order.getCompletionDate().isAfter(expectedEndTime)) {
+            long delayInHours = Duration.between(expectedEndTime, order.getCompletionDate()).toHours();
+            if (delayInHours > 0) {
+                Specialist specialist = order.getSelectedSpecialist();
+                long newTotalScore = specialist.getTotalScore() - delayInHours;
+                specialist.setTotalScore(newTotalScore);
+
+                if (specialist.getReviewCount() > 0) {
+                    specialist.setAverageScore((double) newTotalScore / specialist.getReviewCount());
+                }
+                if (newTotalScore < 0) {
+                    specialist.setStatus(SpecialistStatus.SUSPENDED);
+                }
+                specialistRepository.save(specialist);
+            }
+        }
+
         return OrderMapper.toDto(orderRepository.save(order));
     }
 
@@ -142,18 +175,36 @@ public class CustomerServiceImpl implements CustomerService {
         }
         Customer customer = order.getCustomer();
         Specialist specialist = order.getSelectedSpecialist();
-        BigDecimal amount = order.getProposedPrice();
-        if (customer.getWallet().getBalance().compareTo(amount) < 0) {
+        BigDecimal totalAmount = order.getProposedPrice();
+
+        if (customer.getWallet().getBalance().compareTo(totalAmount) < 0) {
             throw new InvalidOperationException("Insufficient funds.");
         }
-        customer.getWallet().setBalance(customer.getWallet().getBalance().subtract(amount));
-        specialist.getWallet().setBalance(specialist.getWallet().getBalance().add(amount));
-        walletRepository.save(customer.getWallet());
-        walletRepository.save(specialist.getWallet());
+
+        BigDecimal specialistShare = totalAmount.multiply(new BigDecimal("0.7")).setScale(2, RoundingMode.HALF_UP);
+
+        customer.getWallet().setBalance(customer.getWallet().getBalance().subtract(totalAmount));
+        specialist.getWallet().setBalance(specialist.getWallet().getBalance().add(specialistShare));
+
+        Transaction customerTransaction = Transaction.builder()
+                .wallet(customer.getWallet())
+                .amount(totalAmount.negate())
+                .type(TransactionType.PAYMENT_SENT)
+                .description("Payment for order #" + order.getId())
+                .build();
+        transactionRepository.save(customerTransaction);
+
+        Transaction specialistTransaction = Transaction.builder()
+                .wallet(specialist.getWallet())
+                .amount(specialistShare)
+                .type(TransactionType.PAYMENT_RECEIVED)
+                .description("Payment received for order #" + order.getId())
+                .build();
+        transactionRepository.save(specialistTransaction);
+
         order.setStatus(OrderStatus.PAID);
         return OrderMapper.toDto(orderRepository.save(order));
     }
-
     @Override
     public Comment leaveComment(Long customerId, Long orderId, CommentRequestDto dto) {
         CustomerOrder order = findOrderForCustomer(customerId, orderId);
@@ -163,12 +214,20 @@ public class CustomerServiceImpl implements CustomerService {
         commentRepository.findByOrderId(orderId).ifPresent(c -> {
             throw new DuplicateResourceException("A comment already exists for this order.");
         });
+        Specialist specialist = order.getSelectedSpecialist();
+        long newTotalScore = specialist.getTotalScore() + dto.score();
+        int newReviewCount = specialist.getReviewCount() + 1;
+
+        specialist.setTotalScore(newTotalScore);
+        specialist.setReviewCount(newReviewCount);
+        specialist.setAverageScore((double) newTotalScore / newReviewCount);
+
+        specialistRepository.save(specialist);
         Comment comment = new Comment();
         comment.setOrder(order);
         comment.setScore(dto.score());
         comment.setText(dto.text());
         Comment savedComment = commentRepository.save(comment);
-        Specialist specialist = order.getSelectedSpecialist();
         specialist.setTotalScore(specialist.getTotalScore() + dto.score());
         specialist.setReviewCount(specialist.getReviewCount() + 1);
         specialistRepository.save(specialist);

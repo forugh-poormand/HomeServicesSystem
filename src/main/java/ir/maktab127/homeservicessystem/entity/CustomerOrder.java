@@ -49,4 +49,6 @@ public class CustomerOrder {
 
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL)
     private Comment comment;
+
+    private LocalDateTime completionDate;
 }

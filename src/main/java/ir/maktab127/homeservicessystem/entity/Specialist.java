@@ -24,6 +24,9 @@ public class Specialist extends Person {
     @Lob
     private byte[] profilePicture;
 
+    @Column(nullable = false)
+    private Double averageScore = 0.0;
+
     private long totalScore = 0;
     private int reviewCount = 0;
 

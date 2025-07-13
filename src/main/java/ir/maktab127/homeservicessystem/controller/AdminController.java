@@ -3,6 +3,7 @@ package ir.maktab127.homeservicessystem.controller;
 import ir.maktab127.homeservicessystem.dto.MainServiceDto;
 import ir.maktab127.homeservicessystem.dto.SubServiceRequestDto;
 import ir.maktab127.homeservicessystem.dto.UserResponseDto;
+import ir.maktab127.homeservicessystem.dto.UserSearchCriteriaDto;
 import ir.maktab127.homeservicessystem.dto.mapper.UserMapper;
 import ir.maktab127.homeservicessystem.service.AdminService;
 import lombok.RequiredArgsConstructor;
@@ -49,5 +50,20 @@ public class AdminController {
     public ResponseEntity<?> assignSpecialistToSubService(@PathVariable Long specialistId, @PathVariable Long subServiceId) {
         adminService.assignSpecialistToSubService(specialistId, subServiceId);
         return ResponseEntity.ok("Specialist assigned to service successfully.");
+    }
+    @GetMapping("/users/search")
+    public ResponseEntity<List<UserResponseDto>> searchUsers(
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String firstName,
+            @RequestParam(required = false) String lastName,
+            @RequestParam(required = false) Long subServiceId,
+            @RequestParam(required = false) Double minScore,
+            @RequestParam(required = false) Double maxScore
+    ) {
+        UserSearchCriteriaDto criteria = new UserSearchCriteriaDto(role, firstName, lastName, subServiceId, minScore, maxScore);
+        List<UserResponseDto> users = adminService.searchUsers(criteria).stream()
+                .map(UserMapper::toUserResponseDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(users);
     }
 }

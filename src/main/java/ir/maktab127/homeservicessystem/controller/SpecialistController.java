@@ -3,6 +3,7 @@ package ir.maktab127.homeservicessystem.controller;
 import ir.maktab127.homeservicessystem.dto.*;
 import ir.maktab127.homeservicessystem.dto.mapper.UserMapper;
 import ir.maktab127.homeservicessystem.entity.Specialist;
+import ir.maktab127.homeservicessystem.entity.Transaction;
 import ir.maktab127.homeservicessystem.service.SpecialistService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/specialists")
@@ -43,10 +46,17 @@ public class SpecialistController {
         return new ResponseEntity<>(specialistService.submitSuggestion(specialistId, orderId, dto), HttpStatus.CREATED);
     }
 
-    @PutMapping("/{specialistId}/profile")
+    @PutMapping(value = "/{specialistId}/profile", consumes = "multipart/form-data")
     public ResponseEntity<UserResponseDto> updateProfile(
             @PathVariable Long specialistId,
-            @Valid @RequestBody UserProfileUpdateDto dto) {
-        return ResponseEntity.ok(specialistService.updateProfile(specialistId, dto));
+            @Valid @RequestPart("dto") UserProfileUpdateDto dto,
+            @RequestPart(value = "profilePicture", required = false) MultipartFile profilePicture) {
+
+        UserResponseDto updatedUser = specialistService.updateProfile(specialistId, dto, profilePicture);
+        return ResponseEntity.ok(updatedUser);
+    }
+    @GetMapping("/{specialistId}/wallet/history")
+    public ResponseEntity<List<Transaction>> getWalletHistory(@PathVariable Long specialistId) {
+        return ResponseEntity.ok(specialistService.getWalletHistory(specialistId));
     }
 }

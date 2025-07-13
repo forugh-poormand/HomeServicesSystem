@@ -1,18 +1,12 @@
 package ir.maktab127.homeservicessystem.service;
 
-import ir.maktab127.homeservicessystem.dto.SpecialistRegistrationDto;
-import ir.maktab127.homeservicessystem.dto.SuggestionRequestDto;
-import ir.maktab127.homeservicessystem.dto.UserProfileUpdateDto;
-import ir.maktab127.homeservicessystem.dto.UserResponseDto;
+import ir.maktab127.homeservicessystem.dto.*;
 import ir.maktab127.homeservicessystem.dto.mapper.UserMapper;
 import ir.maktab127.homeservicessystem.entity.*;
 import ir.maktab127.homeservicessystem.entity.enums.OrderStatus;
 import ir.maktab127.homeservicessystem.entity.enums.SpecialistStatus;
 import ir.maktab127.homeservicessystem.exceptions.*;
-import ir.maktab127.homeservicessystem.repository.CustomerOrderRepository;
-import ir.maktab127.homeservicessystem.repository.SpecialistRepository;
-import ir.maktab127.homeservicessystem.repository.SuggestionRepository;
-import ir.maktab127.homeservicessystem.repository.WalletRepository;
+import ir.maktab127.homeservicessystem.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,9 +24,9 @@ import java.util.stream.Collectors;
 public class SpecialistServiceImpl implements SpecialistService {
 
     private final SpecialistRepository specialistRepository;
-    private final WalletRepository walletRepository;
     private final CustomerOrderRepository orderRepository;
     private final SuggestionRepository suggestionRepository;
+    private final TransactionRepository transactionRepository;
 
     @Override
     public Specialist register(SpecialistRegistrationDto dto, MultipartFile profilePicture) {
@@ -40,17 +34,20 @@ public class SpecialistServiceImpl implements SpecialistService {
             throw new DuplicateResourceException("Email already exists: " + dto.email());
         });
         Specialist specialist = UserMapper.toSpecialist(dto);
+        Wallet wallet = new Wallet();
+        specialist.setWallet(wallet);
+
         try {
             if (profilePicture != null && !profilePicture.isEmpty()) {
                 specialist.setProfilePicture(profilePicture.getBytes());
+                specialist.setStatus(SpecialistStatus.AWAITING_CONFIRMATION);
+            } else {
+                specialist.setStatus(SpecialistStatus.NEW_AWAITING_PICTURE); //without photo
             }
         } catch (IOException e) {
             throw new InvalidOperationException("Could not process the profile picture.");
         }
-        Wallet wallet = new Wallet();
-        wallet.setBalance(BigDecimal.ZERO);
-        walletRepository.save(wallet);
-        specialist.setWallet(wallet);
+
         return specialistRepository.save(specialist);
     }
 
@@ -116,22 +113,63 @@ public class SpecialistServiceImpl implements SpecialistService {
     }
 
     @Override
-    public UserResponseDto updateProfile(Long specialistId, UserProfileUpdateDto dto) {
+    public UserResponseDto updateProfile(Long specialistId, UserProfileUpdateDto dto, MultipartFile profilePicture) {
         Specialist specialist = specialistRepository.findById(specialistId)
                 .orElseThrow(() -> new ResourceNotFoundException("Specialist not found with id: " + specialistId));
 
 
-        boolean hasActiveOrders = specialist.getOrders().stream()
-                .anyMatch(order -> order.getStatus() != OrderStatus.DONE && order.getStatus() != OrderStatus.PAID);
-
-        if (hasActiveOrders) {
-            throw new InvalidOperationException("Cannot update profile with active orders. Please complete your current jobs first.");
-        }
-
         specialist.setEmail(dto.email());
         specialist.setPassword(dto.password());
-        specialist.setStatus(SpecialistStatus.AWAITING_CONFIRMATION);
+
+        try {
+            if (profilePicture != null && !profilePicture.isEmpty()) {
+                specialist.setProfilePicture(profilePicture.getBytes());
+                if (specialist.getStatus() == SpecialistStatus.NEW_AWAITING_PICTURE) {
+                    specialist.setStatus(SpecialistStatus.AWAITING_CONFIRMATION);
+                }
+            }
+        } catch (IOException e) {
+            throw new InvalidOperationException("Could not process the profile picture.");
+        }
 
         return UserMapper.toUserResponseDto(specialistRepository.save(specialist));
     }
-}
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CustomerOrder> getOrderHistory(Long specialistId) {
+        specialistRepository.findById(specialistId)
+                .orElseThrow(() -> new ResourceNotFoundException("Specialist not found"));
+
+        return suggestionRepository.findBySpecialistId(specialistId).stream()
+                .map(Suggestion::getOrder)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+        @Override
+        @Transactional(readOnly = true)
+        public ScoreDto getOrderScore(Long specialistId, Long orderId) {
+            CustomerOrder order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+            if (order.getSelectedSpecialist() == null || !order.getSelectedSpecialist().getId().equals(specialistId)) {
+                throw new InvalidOperationException("You do not have access to this order's score.");
+            }
+
+            Comment comment = order.getComment();
+            if (comment == null) {
+                throw new ResourceNotFoundException("No comment found for this order.");
+            }
+
+            return new ScoreDto(orderId, comment.getScore());
+        }
+    @Override
+    @Transactional(readOnly = true)
+    public List<Transaction> getWalletHistory(Long specialistId) {
+        Specialist specialist = specialistRepository.findById(specialistId)
+                .orElseThrow(() -> new ResourceNotFoundException("Specialist not found with id: " + specialistId));
+
+        return transactionRepository.findByWalletIdOrderByTransactionDateDesc(specialist.getWallet().getId());
+    }
+    }

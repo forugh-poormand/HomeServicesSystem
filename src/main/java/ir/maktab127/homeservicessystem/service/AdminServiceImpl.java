@@ -3,19 +3,22 @@ package ir.maktab127.homeservicessystem.service;
 import ir.maktab127.homeservicessystem.dto.LoginRequestDto;
 import ir.maktab127.homeservicessystem.dto.MainServiceDto;
 import ir.maktab127.homeservicessystem.dto.SubServiceRequestDto;
-import ir.maktab127.homeservicessystem.entity.Customer;
-import ir.maktab127.homeservicessystem.entity.MainService;
-import ir.maktab127.homeservicessystem.entity.Specialist;
-import ir.maktab127.homeservicessystem.entity.SubService;
+import ir.maktab127.homeservicessystem.dto.UserSearchCriteriaDto;
+import ir.maktab127.homeservicessystem.entity.*;
 import ir.maktab127.homeservicessystem.entity.enums.OrderStatus;
 import ir.maktab127.homeservicessystem.entity.enums.SpecialistStatus;
 import ir.maktab127.homeservicessystem.exceptions.DuplicateResourceException;
 import ir.maktab127.homeservicessystem.exceptions.InvalidOperationException;
 import ir.maktab127.homeservicessystem.exceptions.ResourceNotFoundException;
 import ir.maktab127.homeservicessystem.repository.*;
+import ir.maktab127.homeservicessystem.specifications.UserSpecification;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.data.jpa.domain.Specification;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -111,5 +114,20 @@ public class AdminServiceImpl implements AdminService {
         return specialistRepository.findAll().stream()
                 .filter(s -> s.getStatus() == SpecialistStatus.AWAITING_CONFIRMATION)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Person> searchUsers(UserSearchCriteriaDto criteria) {
+        List<Person> results = new ArrayList<>();
+
+        if (!StringUtils.hasText(criteria.role()) || "customer".equalsIgnoreCase(criteria.role())) {
+            results.addAll(customerRepository.findAll(UserSpecification.getCustomerSpecification(criteria)));
+        }
+
+        if (!StringUtils.hasText(criteria.role()) || "specialist".equalsIgnoreCase(criteria.role())) {
+            results.addAll(specialistRepository.findAll(UserSpecification.getSpecialistSpecification(criteria)));
+        }
+
+        return results;
     }
 }
