@@ -73,6 +73,11 @@ public class SpecialistServiceImpl implements SpecialistService {
         if (!specialist.getExpertIn().contains(order.getSubService())) {
             throw new InvalidOperationException("You are not an expert for this service type.");
         }
+        if (dto.proposedPrice() == null || dto.proposedPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidOperationException("Proposed price must be positive.");
+        } if (dto.proposedPrice().compareTo(order.getProposedPrice()) < 0) {
+            throw new InvalidOperationException("Specialist's price cannot be less than the customer's proposed price.");
+        }
 
         boolean alreadyHasSuggestion = order.getSuggestions().stream()
                 .anyMatch(s -> s.getSpecialist().getId().equals(specialistId));
