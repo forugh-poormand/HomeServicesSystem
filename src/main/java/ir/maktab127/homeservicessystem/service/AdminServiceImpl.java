@@ -75,6 +75,11 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
+    public void removeSpecialistFromSubService(Long specialistId, Long subServiceId) {
+
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<Specialist> findAllUnconfirmedSpecialists() {
         return specialistRepository.findAll().stream()

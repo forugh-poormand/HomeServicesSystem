@@ -36,7 +36,7 @@ public class Specialist extends Person {
     private Set<SubService> expertIn = new HashSet<>();
 
     @OneToMany(mappedBy = "specialist")
-    private Set<Suggestion> suggestions;
+    private Set<Suggestion> suggestions = new HashSet<>();
 
     @OneToMany(mappedBy = "selectedSpecialist")
     private Set<CustomerOrder> orders = new HashSet<>();

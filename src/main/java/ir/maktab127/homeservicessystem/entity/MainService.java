@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -19,5 +20,5 @@ public class MainService {
 
     @OneToMany(mappedBy = "mainService",cascade = CascadeType.ALL,fetch = FetchType.LAZY
     )
-    private Set<SubService> subServices;
+    private Set<SubService> subServices = new HashSet<>();
 }
