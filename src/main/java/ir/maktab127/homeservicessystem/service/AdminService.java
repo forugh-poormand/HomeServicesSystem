@@ -12,5 +12,6 @@ public interface AdminService {
     SubService createSubService(SubServiceRequestDto dto);
     Specialist confirmSpecialist(Long specialistId);
     void assignSpecialistToSubService(Long specialistId, Long subServiceId);
+    void removeSpecialistFromSubService(Long specialistId, Long subServiceId);
     List<Specialist> findAllUnconfirmedSpecialists();
 }
