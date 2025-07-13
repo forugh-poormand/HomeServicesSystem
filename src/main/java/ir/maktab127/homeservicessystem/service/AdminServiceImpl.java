@@ -1,16 +1,18 @@
 package ir.maktab127.homeservicessystem.service;
 
+import ir.maktab127.homeservicessystem.dto.LoginRequestDto;
 import ir.maktab127.homeservicessystem.dto.MainServiceDto;
 import ir.maktab127.homeservicessystem.dto.SubServiceRequestDto;
+import ir.maktab127.homeservicessystem.entity.Customer;
 import ir.maktab127.homeservicessystem.entity.MainService;
 import ir.maktab127.homeservicessystem.entity.Specialist;
 import ir.maktab127.homeservicessystem.entity.SubService;
+import ir.maktab127.homeservicessystem.entity.enums.OrderStatus;
 import ir.maktab127.homeservicessystem.entity.enums.SpecialistStatus;
 import ir.maktab127.homeservicessystem.exceptions.DuplicateResourceException;
+import ir.maktab127.homeservicessystem.exceptions.InvalidOperationException;
 import ir.maktab127.homeservicessystem.exceptions.ResourceNotFoundException;
-import ir.maktab127.homeservicessystem.repository.MainServiceRepository;
-import ir.maktab127.homeservicessystem.repository.SpecialistRepository;
-import ir.maktab127.homeservicessystem.repository.SubServiceRepository;
+import ir.maktab127.homeservicessystem.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,8 +24,9 @@ import java.util.stream.Collectors;
 @Transactional
 public class AdminServiceImpl implements AdminService {
 
-    private final MainServiceRepository mainServiceRepository;
+    private final CustomerRepository customerRepository;
     private final SubServiceRepository subServiceRepository;
+    private final MainServiceRepository mainServiceRepository;
     private final SpecialistRepository specialistRepository;
 
     @Override
@@ -76,7 +79,30 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public void removeSpecialistFromSubService(Long specialistId, Long subServiceId) {
+        Specialist specialist = specialistRepository.findById(specialistId)
+                .orElseThrow(() -> new ResourceNotFoundException("Specialist not found with id: " + specialistId));
+        SubService subService = subServiceRepository.findById(subServiceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Sub-service not found with id: " + subServiceId));
 
+        boolean hasActiveOrder = specialist.getOrders().stream()
+                .anyMatch(order -> order.getSubService().equals(subService) &&
+                        (order.getStatus() != OrderStatus.DONE && order.getStatus() != OrderStatus.PAID));
+
+        if (hasActiveOrder) {
+            throw new InvalidOperationException("Cannot remove specialist from a service with active orders.");
+        }
+
+        specialist.getExpertIn().remove(subService);
+        specialistRepository.save(specialist);
+    }
+    public Customer login(LoginRequestDto dto) {
+        Customer customer = customerRepository.findByEmail(dto.email())
+                .orElseThrow(() -> new ResourceNotFoundException("Invalid email or password"));
+        // In a real app, use a password encoder like BCrypt
+        if (!customer.getPassword().equals(dto.password())) {
+            throw new ResourceNotFoundException("Invalid email or password");
+        }
+        return customer;
     }
 
     @Override
