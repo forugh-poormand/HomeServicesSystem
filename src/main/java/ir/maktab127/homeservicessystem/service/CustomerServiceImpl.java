@@ -179,6 +179,13 @@ public class CustomerServiceImpl implements CustomerService {
     public UserResponseDto updateProfile(Long customerId, UserProfileUpdateDto dto) {
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + customerId));
+
+        customerRepository.findByEmail(dto.email()).ifPresent(c -> {
+            if (!c.getId().equals(customerId)) {
+                throw new DuplicateResourceException("email is already exist");
+            }
+        });
+
         customer.setEmail(dto.email());
         customer.setPassword(dto.password());
         return UserMapper.toUserResponseDto(customerRepository.save(customer));
