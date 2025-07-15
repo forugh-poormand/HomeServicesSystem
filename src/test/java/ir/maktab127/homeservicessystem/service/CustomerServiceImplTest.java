@@ -1,4 +1,6 @@
 package ir.maktab127.homeservicessystem.service;
+
+
 import ir.maktab127.homeservicessystem.dto.OrderRequestDto;
 import ir.maktab127.homeservicessystem.dto.UserRegistrationDto;
 import ir.maktab127.homeservicessystem.entity.Customer;
@@ -6,9 +8,7 @@ import ir.maktab127.homeservicessystem.entity.CustomerOrder;
 import ir.maktab127.homeservicessystem.entity.SubService;
 import ir.maktab127.homeservicessystem.entity.Wallet;
 import ir.maktab127.homeservicessystem.exceptions.InvalidOperationException;
-import ir.maktab127.homeservicessystem.repository.CustomerRepository;
-import ir.maktab127.homeservicessystem.repository.CustomerOrderRepository;
-import ir.maktab127.homeservicessystem.repository.SubServiceRepository;
+import ir.maktab127.homeservicessystem.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +34,8 @@ class CustomerServiceImplTest {
     private SubServiceRepository subServiceRepository;
     @Mock
     private CustomerOrderRepository orderRepository;
+    @Mock
+    private WalletRepository walletRepository;
 
     @InjectMocks
     private CustomerServiceImpl customerService;
@@ -60,12 +62,17 @@ class CustomerServiceImplTest {
     void register_success() {
         UserRegistrationDto dto = new UserRegistrationDto("John", "Doe", "john.doe@test.com", "password123");
         when(customerRepository.findByEmail(dto.email())).thenReturn(Optional.empty());
-        when(customerRepository.save(any(Customer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(customerRepository.save(any(Customer.class))).thenAnswer(invocation -> {
+            Customer c = invocation.getArgument(0);
+            c.setId(1L);
+            return c;
+        });
 
         Customer result = customerService.register(dto);
 
         assertEquals(dto.email(), result.getEmail());
         verify(customerRepository, times(1)).save(any(Customer.class));
+        verify(walletRepository, times(1)).save(any(Wallet.class));
     }
 
     @Test
@@ -95,5 +102,4 @@ class CustomerServiceImplTest {
         assertEquals("Proposed price must be equal or greater than the base price.", exception.getMessage());
         verify(orderRepository, never()).save(any(CustomerOrder.class));
     }
-
 }

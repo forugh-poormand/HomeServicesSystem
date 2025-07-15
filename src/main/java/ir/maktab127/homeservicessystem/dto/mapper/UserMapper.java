@@ -24,8 +24,6 @@ public class UserMapper {
         specialist.setLastName(dto.lastName());
         specialist.setEmail(dto.email());
         specialist.setPassword(dto.password());
-        // Note: profilePicture is NOT set here.
-        // This is handled in the service layer from the MultipartFile.
         return specialist;
     }
 

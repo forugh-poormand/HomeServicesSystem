@@ -101,7 +101,6 @@ public class AdminServiceImpl implements AdminService {
     public Customer login(LoginRequestDto dto) {
         Customer customer = customerRepository.findByEmail(dto.email())
                 .orElseThrow(() -> new ResourceNotFoundException("Invalid email or password"));
-        // In a real app, use a password encoder like BCrypt
         if (!customer.getPassword().equals(dto.password())) {
             throw new ResourceNotFoundException("Invalid email or password");
         }

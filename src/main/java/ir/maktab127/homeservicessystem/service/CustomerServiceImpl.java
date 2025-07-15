@@ -40,6 +40,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final TransactionRepository transactionRepository;
     private final CaptchaService captchaService;
 
+
     @Override
     public Customer register(UserRegistrationDto dto) {
         customerRepository.findByEmail(dto.email()).ifPresent(c -> {

@@ -16,9 +16,11 @@ import org.springframework.web.bind.annotation.*;
 public class CustomerController {
 
     private final CustomerService customerService;
+    private final CaptchaService captchaService;
 
-    public CustomerController(CustomerService customerService) {
+    public CustomerController(CustomerService customerService, CaptchaService captchaService) {
         this.customerService = customerService;
+        this.captchaService = captchaService;
     }
 
     @PostMapping("/register")
@@ -81,14 +83,17 @@ public class CustomerController {
             @Valid @RequestBody UserProfileUpdateDto dto) {
         return ResponseEntity.ok(customerService.updateProfile(customerId, dto));
     }
+
     @PostMapping("/{customerId}/wallet/charge")
     public ResponseEntity<?> chargeWallet(
             @PathVariable Long customerId,
             @RequestBody ChargeRequestDto dto) {
         return new ResponseEntity<>(customerService.chargeWallet(customerId, dto), HttpStatus.OK);
     }
+
     @GetMapping("/payment/captcha")
     public ResponseEntity<String> getCaptcha() {
-        return ResponseEntity.ok(new CaptchaService().generateCaptcha());
+
+        return ResponseEntity.ok(captchaService.generateCaptcha());
     }
 }

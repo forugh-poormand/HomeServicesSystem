@@ -6,7 +6,6 @@ import ir.maktab127.homeservicessystem.entity.Specialist;
 import ir.maktab127.homeservicessystem.entity.Transaction;
 import ir.maktab127.homeservicessystem.service.SpecialistService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

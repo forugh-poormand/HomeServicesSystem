@@ -1,4 +1,5 @@
 package ir.maktab127.homeservicessystem.service;
+
 import ir.maktab127.homeservicessystem.dto.SuggestionRequestDto;
 import ir.maktab127.homeservicessystem.entity.CustomerOrder;
 import ir.maktab127.homeservicessystem.entity.Specialist;
@@ -19,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -60,6 +62,7 @@ class SpecialistServiceImplTest {
         order.setStatus(OrderStatus.WAITING_FOR_SUGGESTIONS);
         order.setSubService(subService);
         order.setProposedPrice(new BigDecimal("100"));
+        order.setSuggestions(new HashSet<>());
 
         suggestionDto = new SuggestionRequestDto(new BigDecimal("120"), 2, LocalDateTime.now().plusHours(1));
     }
@@ -81,7 +84,7 @@ class SpecialistServiceImplTest {
 
     @Test
     void submitSuggestion_throwsInvalidOperationException_whenNotAnExpert() {
-        specialist.setExpertIn(Set.of()); // Specialist is not an expert in anything
+        specialist.setExpertIn(Set.of());
         when(specialistRepository.findById(1L)).thenReturn(Optional.of(specialist));
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
 
@@ -94,7 +97,7 @@ class SpecialistServiceImplTest {
     }
 
     @Test
-    void submitSuggestion_throwsInvalidOperationException_whenPriceIsTooLow() {
+    void submitSuggestion_throwsInvalidOperationException_whenPriceIsInvalid() {
         SuggestionRequestDto lowPriceDto = new SuggestionRequestDto(new BigDecimal("90"), 2, null);
         when(specialistRepository.findById(1L)).thenReturn(Optional.of(specialist));
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));

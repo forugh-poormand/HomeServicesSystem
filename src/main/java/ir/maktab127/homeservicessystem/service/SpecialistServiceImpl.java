@@ -42,7 +42,7 @@ public class SpecialistServiceImpl implements SpecialistService {
                 specialist.setProfilePicture(profilePicture.getBytes());
                 specialist.setStatus(SpecialistStatus.AWAITING_CONFIRMATION);
             } else {
-                specialist.setStatus(SpecialistStatus.NEW_AWAITING_PICTURE); //without photo
+                specialist.setStatus(SpecialistStatus.NEW_AWAITING_PICTURE);
             }
         } catch (IOException e) {
             throw new InvalidOperationException("Could not process the profile picture.");
@@ -72,7 +72,8 @@ public class SpecialistServiceImpl implements SpecialistService {
         }
         if (dto.proposedPrice() == null || dto.proposedPrice().compareTo(BigDecimal.ZERO) <= 0) {
             throw new InvalidOperationException("Proposed price must be positive.");
-        } if (dto.proposedPrice().compareTo(order.getProposedPrice()) < 0) {
+        }
+        if (dto.proposedPrice().compareTo(order.getProposedPrice()) < 0) {
             throw new InvalidOperationException("Specialist's price cannot be less than the customer's proposed price.");
         }
 
@@ -117,13 +118,27 @@ public class SpecialistServiceImpl implements SpecialistService {
         Specialist specialist = specialistRepository.findById(specialistId)
                 .orElseThrow(() -> new ResourceNotFoundException("Specialist not found with id: " + specialistId));
 
+        boolean hasActiveOrders = specialist.getOrders().stream()
+                .anyMatch(order -> order.getStatus() != OrderStatus.DONE && order.getStatus() != OrderStatus.PAID);
+
+        if (hasActiveOrders) {
+            throw new InvalidOperationException("Cannot update profile with active orders. Please complete your current jobs first.");
+        }
+
+        specialistRepository.findByEmail(dto.email()).ifPresent(s -> {
+            if (!s.getId().equals(specialistId)) {
+                throw new DuplicateResourceException("Email already exists: " + dto.email());
+            }
+        });
 
         specialist.setEmail(dto.email());
         specialist.setPassword(dto.password());
 
         try {
             if (profilePicture != null && !profilePicture.isEmpty()) {
-                specialist.setProfilePicture(profilePicture.getBytes());
+                byte[] pictureBytes = profilePicture.getBytes();
+                specialist.setProfilePicture(pictureBytes);
+
                 if (specialist.getStatus() == SpecialistStatus.NEW_AWAITING_PICTURE) {
                     specialist.setStatus(SpecialistStatus.AWAITING_CONFIRMATION);
                 }
@@ -132,7 +147,8 @@ public class SpecialistServiceImpl implements SpecialistService {
             throw new InvalidOperationException("Could not process the profile picture.");
         }
 
-        return UserMapper.toUserResponseDto(specialistRepository.save(specialist));
+        Specialist savedSpecialist = specialistRepository.save(specialist);
+        return UserMapper.toUserResponseDto(savedSpecialist);
     }
 
     @Override
@@ -147,23 +163,24 @@ public class SpecialistServiceImpl implements SpecialistService {
                 .collect(Collectors.toList());
     }
 
-        @Override
-        @Transactional(readOnly = true)
-        public ScoreDto getOrderScore(Long specialistId, Long orderId) {
-            CustomerOrder order = orderRepository.findById(orderId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+    @Override
+    @Transactional(readOnly = true)
+    public ScoreDto getOrderScore(Long specialistId, Long orderId) {
+        CustomerOrder order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
-            if (order.getSelectedSpecialist() == null || !order.getSelectedSpecialist().getId().equals(specialistId)) {
-                throw new InvalidOperationException("You do not have access to this order's score.");
-            }
-
-            Comment comment = order.getComment();
-            if (comment == null) {
-                throw new ResourceNotFoundException("No comment found for this order.");
-            }
-
-            return new ScoreDto(orderId, comment.getScore());
+        if (order.getSelectedSpecialist() == null || !order.getSelectedSpecialist().getId().equals(specialistId)) {
+            throw new InvalidOperationException("You do not have access to this order's score.");
         }
+
+        Comment comment = order.getComment();
+        if (comment == null) {
+            throw new ResourceNotFoundException("No comment found for this order.");
+        }
+
+        return new ScoreDto(orderId, comment.getScore());
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<Transaction> getWalletHistory(Long specialistId) {
@@ -172,4 +189,4 @@ public class SpecialistServiceImpl implements SpecialistService {
 
         return transactionRepository.findByWalletIdOrderByTransactionDateDesc(specialist.getWallet().getId());
     }
-    }
+}
