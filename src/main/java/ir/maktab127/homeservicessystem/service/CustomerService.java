@@ -15,4 +15,5 @@ public interface CustomerService {
     OrderResponseDto payForOrder(Long customerId, Long orderId);
     Comment leaveComment(Long customerId, Long orderId, CommentRequestDto dto);
     UserResponseDto updateProfile(Long customerId, UserProfileUpdateDto dto);
+    Transaction chargeWallet(Long customerId, ChargeRequestDto dto);
 }

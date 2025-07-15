@@ -38,6 +38,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final CommentRepository commentRepository;
     private final SpecialistRepository specialistRepository;
     private final TransactionRepository transactionRepository;
+    private final CaptchaService captchaService;
 
     @Override
     public Customer register(UserRegistrationDto dto) {
@@ -139,7 +140,6 @@ public class CustomerServiceImpl implements CustomerService {
         order.setStatus(OrderStatus.DONE);
         order.setCompletionDate(LocalDateTime.now());
 
-        // بخش جدید: محاسبه و اعمال جریمه تاخیر
         Suggestion selectedSuggestion = order.getSuggestions().stream()
                 .filter(s -> s.getSpecialist().equals(order.getSelectedSpecialist()))
                 .findFirst()
@@ -257,5 +257,26 @@ public class CustomerServiceImpl implements CustomerService {
             throw new InvalidOperationException("Access denied. You are not the owner of this order.");
         }
         return order;
+    }
+    @Override
+    public Transaction chargeWallet(Long customerId, ChargeRequestDto dto) {
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
+
+        if (dto.amount() == null || dto.amount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidOperationException("Charge amount must be positive.");
+        }
+
+        Wallet wallet = customer.getWallet();
+        wallet.setBalance(wallet.getBalance().add(dto.amount()));
+
+        Transaction transaction = Transaction.builder()
+                .wallet(wallet)
+                .amount(dto.amount())
+                .type(TransactionType.DEPOSIT)
+                .description("Wallet charged via payment gateway simulation.")
+                .build();
+
+        return transactionRepository.save(transaction);
     }
 }

@@ -3,6 +3,7 @@ package ir.maktab127.homeservicessystem.controller;
 import ir.maktab127.homeservicessystem.dto.*;
 import ir.maktab127.homeservicessystem.dto.mapper.UserMapper;
 import ir.maktab127.homeservicessystem.entity.Customer;
+import ir.maktab127.homeservicessystem.service.CaptchaService;
 import ir.maktab127.homeservicessystem.service.CustomerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -79,5 +80,15 @@ public class CustomerController {
             @PathVariable Long customerId,
             @Valid @RequestBody UserProfileUpdateDto dto) {
         return ResponseEntity.ok(customerService.updateProfile(customerId, dto));
+    }
+    @PostMapping("/{customerId}/wallet/charge")
+    public ResponseEntity<?> chargeWallet(
+            @PathVariable Long customerId,
+            @RequestBody ChargeRequestDto dto) {
+        return new ResponseEntity<>(customerService.chargeWallet(customerId, dto), HttpStatus.OK);
+    }
+    @GetMapping("/payment/captcha")
+    public ResponseEntity<String> getCaptcha() {
+        return ResponseEntity.ok(new CaptchaService().generateCaptcha());
     }
 }
