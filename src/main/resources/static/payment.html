@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Payment Gateway</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="payment-form">
+      <h2>Payment Simulation</h2>
+      <div id="timer">10:00</div>
+      <form id="chargeForm">
+        <div class="form-group">
+          <label for="amount">Amount</label>
+          <input
+            type="number"
+            id="amount"
+            placeholder="Enter amount to charge"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label>Card Number</label>
+          <input type="text" value="1111-2222-3333-4444" readonly />
+        </div>
+        <div class="form-group">
+          <label>Captcha</label>
+          <div id="captcha-display"></div>
+          <input
+            type="text"
+            id="captcha-input"
+            placeholder="Enter captcha"
+            required
+          />
+        </div>
+        <button type="submit">Pay Now</button>
+      </form>
+      <div id="message"></div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
