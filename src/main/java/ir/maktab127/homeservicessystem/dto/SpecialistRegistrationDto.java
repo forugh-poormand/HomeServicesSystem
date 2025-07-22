@@ -4,5 +4,6 @@ public record SpecialistRegistrationDto(
         String firstName,
         String lastName,
         String email,
-        String password
+        String password,
+        String imagePath
 ) {}
