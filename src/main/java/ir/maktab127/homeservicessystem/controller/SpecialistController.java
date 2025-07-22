@@ -3,13 +3,11 @@ package ir.maktab127.homeservicessystem.controller;
 import ir.maktab127.homeservicessystem.dto.*;
 import ir.maktab127.homeservicessystem.dto.mapper.UserMapper;
 import ir.maktab127.homeservicessystem.entity.Specialist;
-import ir.maktab127.homeservicessystem.entity.Transaction;
 import ir.maktab127.homeservicessystem.service.SpecialistService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -24,11 +22,9 @@ public class SpecialistController {
         this.specialistService = specialistService;
     }
 
-    @PostMapping(value = "/register", consumes = "multipart/form-data")
-    public ResponseEntity<UserResponseDto> register(
-            @Valid @RequestPart("dto") SpecialistRegistrationDto dto,
-            @RequestPart(value = "profilePicture", required = false) MultipartFile profilePicture) {
-        Specialist newSpecialist = specialistService.register(dto, profilePicture);
+    @PostMapping("/register")
+    public ResponseEntity<UserResponseDto> register(@Valid @RequestBody SpecialistRegistrationDto dto) {
+        Specialist newSpecialist = specialistService.register(dto);
         return new ResponseEntity<>(UserMapper.toUserResponseDto(newSpecialist), HttpStatus.CREATED);
     }
 
@@ -45,17 +41,27 @@ public class SpecialistController {
         return new ResponseEntity<>(specialistService.submitSuggestion(specialistId, orderId, dto), HttpStatus.CREATED);
     }
 
-    @PutMapping(value = "/{specialistId}/profile", consumes = "multipart/form-data")
+    @PutMapping("/{specialistId}/profile")
     public ResponseEntity<UserResponseDto> updateProfile(
             @PathVariable Long specialistId,
-            @Valid @RequestPart("dto") UserProfileUpdateDto dto,
-            @RequestPart(value = "profilePicture", required = false) MultipartFile profilePicture) {
+            @Valid @RequestBody UserProfileUpdateDto dto) {
 
-        UserResponseDto updatedUser = specialistService.updateProfile(specialistId, dto, profilePicture);
+        UserResponseDto updatedUser = specialistService.updateProfile(specialistId, dto);
         return ResponseEntity.ok(updatedUser);
     }
+
     @GetMapping("/{specialistId}/wallet/history")
-    public ResponseEntity<List<Transaction>> getWalletHistory(@PathVariable Long specialistId) {
+    public ResponseEntity<List<TransactionDto>> getWalletHistory(@PathVariable Long specialistId) {
         return ResponseEntity.ok(specialistService.getWalletHistory(specialistId));
+    }
+
+    @GetMapping("/{specialistId}/orders/history")
+    public ResponseEntity<List<OrderResponseDto>> getOrderHistory(@PathVariable Long specialistId) {
+        return ResponseEntity.ok(specialistService.getOrderHistory(specialistId));
+    }
+
+    @GetMapping("/{specialistId}/score/average")
+    public ResponseEntity<AverageScoreDto> getAverageScore(@PathVariable Long specialistId) {
+        return ResponseEntity.ok(specialistService.getAverageScore(specialistId));
     }
 }

@@ -1,6 +1,8 @@
 package ir.maktab127.homeservicessystem.service;
 
 import ir.maktab127.homeservicessystem.dto.*;
+import ir.maktab127.homeservicessystem.dto.mapper.OrderMapper;
+import ir.maktab127.homeservicessystem.dto.mapper.TransactionMapper;
 import ir.maktab127.homeservicessystem.dto.mapper.UserMapper;
 import ir.maktab127.homeservicessystem.entity.*;
 import ir.maktab127.homeservicessystem.entity.enums.OrderStatus;
@@ -10,10 +12,13 @@ import ir.maktab127.homeservicessystem.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,7 +34,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     private final TransactionRepository transactionRepository;
 
     @Override
-    public Specialist register(SpecialistRegistrationDto dto, MultipartFile profilePicture) {
+    public Specialist register(SpecialistRegistrationDto dto) {
         specialistRepository.findByEmail(dto.email()).ifPresent(s -> {
             throw new DuplicateResourceException("Email already exists: " + dto.email());
         });
@@ -37,18 +42,30 @@ public class SpecialistServiceImpl implements SpecialistService {
         Wallet wallet = new Wallet();
         specialist.setWallet(wallet);
 
-        try {
-            if (profilePicture != null && !profilePicture.isEmpty()) {
-                specialist.setProfilePicture(profilePicture.getBytes());
+        if (dto.imagePath() != null && !dto.imagePath().isBlank()) {
+            try {
+                byte[] image = readImageFromPath(dto.imagePath());
+                if (image.length > 300 * 1024) { // 300 KB
+                    throw new ImageLengthOutOfBoundException("Image size cannot exceed 300 KB.");
+                }
+                specialist.setProfilePicture(image);
                 specialist.setStatus(SpecialistStatus.AWAITING_CONFIRMATION);
-            } else {
-                specialist.setStatus(SpecialistStatus.NEW_AWAITING_PICTURE);
+            } catch (IOException e) {
+                throw new InvalidOperationException("Could not process the profile picture.");
             }
-        } catch (IOException e) {
-            throw new InvalidOperationException("Could not process the profile picture.");
+        } else {
+            specialist.setStatus(SpecialistStatus.NEW_AWAITING_PICTURE);
         }
 
         return specialistRepository.save(specialist);
+    }
+
+    private byte[] readImageFromPath(String filePath) throws IOException {
+        Path path = Paths.get(filePath);
+        if (!Files.exists(path)) {
+            throw new FileNotFoundException("File not found at path: " + filePath);
+        }
+        return Files.readAllBytes(path);
     }
 
     @Override
@@ -114,7 +131,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     }
 
     @Override
-    public UserResponseDto updateProfile(Long specialistId, UserProfileUpdateDto dto, MultipartFile profilePicture) {
+    public UserResponseDto updateProfile(Long specialistId, UserProfileUpdateDto dto) {
         Specialist specialist = specialistRepository.findById(specialistId)
                 .orElseThrow(() -> new ResourceNotFoundException("Specialist not found with id: " + specialistId));
 
@@ -125,26 +142,33 @@ public class SpecialistServiceImpl implements SpecialistService {
             throw new InvalidOperationException("Cannot update profile with active orders. Please complete your current jobs first.");
         }
 
-        specialistRepository.findByEmail(dto.email()).ifPresent(s -> {
-            if (!s.getId().equals(specialistId)) {
-                throw new DuplicateResourceException("Email already exists: " + dto.email());
-            }
-        });
+        if (dto.email() != null && !dto.email().isBlank()) {
+            specialistRepository.findByEmail(dto.email()).ifPresent(s -> {
+                if (!s.getId().equals(specialistId)) {
+                    throw new DuplicateResourceException("Email already exists: " + dto.email());
+                }
+            });
+            specialist.setEmail(dto.email());
+        }
 
-        specialist.setEmail(dto.email());
-        specialist.setPassword(dto.password());
+        if (dto.password() != null && !dto.password().isBlank()) {
+            specialist.setPassword(dto.password());
+        }
 
-        try {
-            if (profilePicture != null && !profilePicture.isEmpty()) {
-                byte[] pictureBytes = profilePicture.getBytes();
+        if (dto.imagePath() != null && !dto.imagePath().isBlank()) {
+            try {
+                byte[] pictureBytes = readImageFromPath(dto.imagePath());
+                if (pictureBytes.length > 300 * 1024) { // 300 KB
+                    throw new ImageLengthOutOfBoundException("Image size cannot exceed 300 KB.");
+                }
                 specialist.setProfilePicture(pictureBytes);
 
                 if (specialist.getStatus() == SpecialistStatus.NEW_AWAITING_PICTURE) {
                     specialist.setStatus(SpecialistStatus.AWAITING_CONFIRMATION);
                 }
+            } catch (IOException e) {
+                throw new InvalidOperationException("Could not process the profile picture.");
             }
-        } catch (IOException e) {
-            throw new InvalidOperationException("Could not process the profile picture.");
         }
 
         Specialist savedSpecialist = specialistRepository.save(specialist);
@@ -153,13 +177,14 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CustomerOrder> getOrderHistory(Long specialistId) {
+    public List<OrderResponseDto> getOrderHistory(Long specialistId) {
         specialistRepository.findById(specialistId)
                 .orElseThrow(() -> new ResourceNotFoundException("Specialist not found"));
 
         return suggestionRepository.findBySpecialistId(specialistId).stream()
                 .map(Suggestion::getOrder)
                 .distinct()
+                .map(OrderMapper::toDto) // Convert to DTO
                 .collect(Collectors.toList());
     }
 
@@ -183,10 +208,22 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Transaction> getWalletHistory(Long specialistId) {
+    public List<TransactionDto> getWalletHistory(Long specialistId) {
         Specialist specialist = specialistRepository.findById(specialistId)
                 .orElseThrow(() -> new ResourceNotFoundException("Specialist not found with id: " + specialistId));
 
-        return transactionRepository.findByWalletIdOrderByTransactionDateDesc(specialist.getWallet().getId());
+        return transactionRepository.findByWalletIdOrderByTransactionDateDesc(specialist.getWallet().getId())
+                .stream()
+                .map(TransactionMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AverageScoreDto getAverageScore(Long specialistId) {
+        Specialist specialist = specialistRepository.findById(specialistId)
+                .orElseThrow(() -> new ResourceNotFoundException("Specialist not found with id: " + specialistId));
+
+        return new AverageScoreDto(specialist.getAverageScore());
     }
 }

@@ -9,11 +9,13 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface SpecialistService {
-    Specialist register(SpecialistRegistrationDto dto, MultipartFile profilePicture);
+    Specialist register(SpecialistRegistrationDto dto);
     Suggestion submitSuggestion(Long specialistId, Long orderId, SuggestionRequestDto dto);
     List<CustomerOrder> findAvailableOrders(Long specialistId);
-    UserResponseDto updateProfile(Long specialistId, UserProfileUpdateDto dto, MultipartFile profilePicture);
-    List<CustomerOrder> getOrderHistory(Long specialistId);
+    UserResponseDto updateProfile(Long specialistId, UserProfileUpdateDto dto);
+    List<OrderResponseDto> getOrderHistory(Long specialistId);
     ScoreDto getOrderScore(Long specialistId, Long orderId);
-    List<Transaction> getWalletHistory(Long specialistId);
+    List<TransactionDto> getWalletHistory(Long specialistId);
+    AverageScoreDto getAverageScore(Long specialistId);
+
 }
