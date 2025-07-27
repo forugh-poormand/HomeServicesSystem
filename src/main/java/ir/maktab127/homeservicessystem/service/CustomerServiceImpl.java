@@ -38,7 +38,6 @@ public class CustomerServiceImpl implements CustomerService {
     private final CommentRepository commentRepository;
     private final SpecialistRepository specialistRepository;
     private final TransactionRepository transactionRepository;
-    private final CaptchaService captchaService;
 
 
     @Override
@@ -167,7 +166,7 @@ public class CustomerServiceImpl implements CustomerService {
 
         return OrderMapper.toDto(orderRepository.save(order));
     }
-
+    @Transactional
     @Override
     public OrderResponseDto payForOrder(Long customerId, Long orderId) {
         CustomerOrder order = findOrderForCustomer(customerId, orderId);
