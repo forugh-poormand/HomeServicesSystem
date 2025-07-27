@@ -10,6 +10,7 @@ import java.util.Set;
 @Entity
 @Setter
 @Getter
+@PrimaryKeyJoinColumn(name = "id")
 public class Customer extends Person {
 
     @OneToOne(cascade = CascadeType.ALL,orphanRemoval = true)

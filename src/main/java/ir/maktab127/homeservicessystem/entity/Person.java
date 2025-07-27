@@ -3,14 +3,16 @@ package ir.maktab127.homeservicessystem.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.antlr.v4.runtime.Token;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@MappedSuperclass
-public class Person {
+@Entity
+@Inheritance(strategy = InheritanceType.JOINED)
+public abstract class Person {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,5 +32,8 @@ public class Person {
 
     @Column(nullable = false)
     private LocalDateTime registrationDate=LocalDateTime.now();
+
+    @Column(nullable = false)
+    private boolean isEmailVerified=false;
 
 }

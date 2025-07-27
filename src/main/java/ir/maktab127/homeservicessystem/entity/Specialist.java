@@ -11,6 +11,7 @@ import java.util.Set;
 @Entity
 @Setter
 @Getter
+@PrimaryKeyJoinColumn(name = "id")
 public class Specialist extends Person {
 
 
