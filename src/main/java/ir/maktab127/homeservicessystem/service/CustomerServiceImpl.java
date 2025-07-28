@@ -38,7 +38,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final CommentRepository commentRepository;
     private final SpecialistRepository specialistRepository;
     private final TransactionRepository transactionRepository;
-
+    private final VerificationService verificationService;
 
     @Override
     public Customer register(UserRegistrationDto dto) {
@@ -50,7 +50,10 @@ public class CustomerServiceImpl implements CustomerService {
         wallet.setBalance(BigDecimal.valueOf(1_000_000_000));
         walletRepository.save(wallet);
         customer.setWallet(wallet);
-        return customerRepository.save(customer);
+        Customer savedCustomer = customerRepository.save(customer);
+
+        verificationService.createAndSendVerificationCode(savedCustomer);
+        return savedCustomer;
     }
 
     @Override

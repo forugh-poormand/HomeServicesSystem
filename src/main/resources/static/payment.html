@@ -1,43 +1,229 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-    <title>Payment Gateway</title>
-    <link rel="stylesheet" href="style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>درگاه پرداخت امن</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Vazirmatn -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Google reCAPTCHA Script -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <style>
+      body {
+        font-family: "Vazirmatn", sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      .card-input {
+        letter-spacing: 4px;
+        text-align: center;
+      }
+    </style>
   </head>
-  <body>
-    <div class="payment-form">
-      <h2>Payment Simulation</h2>
-      <div id="timer">10:00</div>
-      <form id="chargeForm">
-        <div class="form-group">
-          <label for="amount">Amount</label>
-          <input
-            type="number"
-            id="amount"
-            placeholder="Enter amount to charge"
-            required
+  <body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-lg">
+      <!-- هدر فرم -->
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-800">پرداخت هزینه سفارش</h1>
+        <p class="text-gray-500 mt-2">اطلاعات کارت بانکی خود را وارد نمایید.</p>
+      </div>
+
+      <!-- تایمر -->
+      <div
+        class="flex items-center justify-center p-3 bg-red-50 border border-red-200 rounded-lg"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-6 w-6 text-red-500 ml-3"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
           />
-        </div>
-        <div class="form-group">
-          <label>Card Number</label>
-          <input type="text" value="1111-2222-3333-4444" readonly />
-        </div>
-        <div class="form-group">
-          <label>Captcha</label>
-          <div id="captcha-display"></div>
+        </svg>
+        <p class="text-red-700 font-semibold">
+          زمان باقی‌مانده:
+          <span id="timer-display" class="font-bold text-lg">10:00</span>
+        </p>
+      </div>
+
+      <!-- فرم پرداخت -->
+      <form id="payment-form" class="space-y-6">
+        <!-- شماره کارت -->
+        <div>
+          <label
+            for="card-number"
+            class="block text-sm font-medium text-gray-700"
+            >شماره کارت</label
+          >
           <input
             type="text"
-            id="captcha-input"
-            placeholder="Enter captcha"
+            id="card-number"
+            name="card-number"
             required
+            class="card-input mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="xxxx - xxxx - xxxx - xxxx"
+            maxlength="19"
           />
         </div>
-        <button type="submit">Pay Now</button>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- تاریخ انقضا -->
+          <div>
+            <label
+              for="expiry-date"
+              class="block text-sm font-medium text-gray-700"
+              >تاریخ انقضا</label
+            >
+            <input
+              type="text"
+              id="expiry-date"
+              name="expiry-date"
+              required
+              class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="YY/MM"
+            />
+          </div>
+          <!-- CVV2 -->
+          <div>
+            <label for="cvv2" class="block text-sm font-medium text-gray-700"
+              >CVV2</label
+            >
+            <input
+              type="password"
+              id="cvv2"
+              name="cvv2"
+              required
+              class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="***"
+              maxlength="4"
+            />
+          </div>
+        </div>
+
+        <!-- Google reCAPTCHA Widget -->
+        <div class="flex justify-center">
+          <div class="g-recaptcha" data-sitekey="YOUR_SITE_KEY_HERE"></div>
+        </div>
+
+        <!-- دکمه پرداخت -->
+        <div>
+          <button
+            type="submit"
+            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300"
+          >
+            پرداخت هزینه
+          </button>
+        </div>
       </form>
-      <div id="message"></div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+      // --- اسکریپت تایمر ---
+      function startPaymentTimer(duration, displayElement) {
+        let timer = duration,
+          minutes,
+          seconds;
+        const interval = setInterval(function () {
+          minutes = parseInt(timer / 60, 10);
+          seconds = parseInt(timer % 60, 10);
+
+          minutes = minutes < 10 ? "0" + minutes : minutes;
+          seconds = seconds < 10 ? "0" + seconds : seconds;
+
+          displayElement.textContent = minutes + ":" + seconds;
+
+          if (--timer < 0) {
+            clearInterval(interval);
+            alert("زمان شما برای پرداخت به پایان رسید!");
+           
+          }
+        }, 1000);
+      }
+
+      window.onload = function () {
+        const tenMinutes = 60 * 10;
+        const display = document.querySelector("#timer-display");
+        startPaymentTimer(tenMinutes, display);
+      };
+
+      // --- اسکریپت فرمت شماره کارت ---
+      document
+        .getElementById("card-number")
+        .addEventListener("input", function (e) {
+          let value = e.target.value
+            .replace(/\s+/g, "")
+            .replace(/[^0-9]/gi, "");
+          let matches = value.match(/\d{4,16}/g);
+          let match = (matches && matches[0]) || "";
+          let parts = [];
+          for (let i = 0, len = match.length; i < len; i += 4) {
+            parts.push(match.substring(i, i + 4));
+          }
+          if (parts.length) {
+            e.target.value = parts.join(" - ");
+          } else {
+            e.target.value = value;
+          }
+        });
+
+      // --- اسکریپت ارسال فرم ---
+      document
+        .getElementById("payment-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // جلوگیری از ارسال عادی فرم
+
+          // دریافت توکن reCAPTCHA
+          const recaptchaResponse = grecaptcha.getResponse();
+
+          if (!recaptchaResponse) {
+            alert("لطفا تایید کنید که ربات نیستید.");
+            return;
+          }
+
+          // جمع‌آوری اطلاعات فرم
+          const formData = new FormData(event.target);
+          const paymentDetails = Object.fromEntries(formData.entries());
+
+          // اضافه کردن توکن کپچا به اطلاعات ارسالی
+          paymentDetails["g-recaptcha-response"] = recaptchaResponse;
+
+          console.log("اطلاعات آماده برای ارسال به بک‌اند:", paymentDetails);
+          alert("در حال ارسال اطلاعات به سرور...");
+
+          // در اینجا باید کد ارسال اطلاعات به بک‌اند خود را با fetch یا axios قرار دهید
+          // مثال با fetch:
+          /*
+            fetch('/api/payment/process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(paymentDetails),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                alert('پرداخت با موفقیت انجام شد!');
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('خطا در فرآیند پرداخت.');
+            });
+            */
+        });
+    </script>
   </body>
 </html>

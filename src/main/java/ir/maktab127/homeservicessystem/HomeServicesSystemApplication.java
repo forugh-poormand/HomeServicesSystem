@@ -13,11 +13,5 @@ public class HomeServicesSystemApplication {
     public static void main(String[] args) {
         SpringApplication.run(HomeServicesSystemApplication.class, args);
     }
-    @Bean
-    public MultipartConfigElement multipartConfigElement() {
-        MultipartConfigFactory factory = new MultipartConfigFactory();
-        factory.setMaxFileSize(DataSize.ofMegabytes(10));
-        factory.setMaxRequestSize(DataSize.ofMegabytes(10));
-        return factory.createMultipartConfig();
-    }
+
 }

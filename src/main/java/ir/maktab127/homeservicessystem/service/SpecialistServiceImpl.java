@@ -32,6 +32,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     private final CustomerOrderRepository orderRepository;
     private final SuggestionRepository suggestionRepository;
     private final TransactionRepository transactionRepository;
+    private final VerificationService verificationService; // <-- 1. Inject VerificationService
 
     @Override
     public Specialist register(SpecialistRegistrationDto dto) {
@@ -42,6 +43,9 @@ public class SpecialistServiceImpl implements SpecialistService {
         Wallet wallet = new Wallet();
         specialist.setWallet(wallet);
 
+        // 2. Set initial status to NEW_AWAITING_PICTURE
+        specialist.setStatus(SpecialistStatus.NEW_AWAITING_PICTURE);
+
         if (dto.imagePath() != null && !dto.imagePath().isBlank()) {
             try {
                 byte[] image = readImageFromPath(dto.imagePath());
@@ -49,15 +53,19 @@ public class SpecialistServiceImpl implements SpecialistService {
                     throw new ImageLengthOutOfBoundException("Image size cannot exceed 300 KB.");
                 }
                 specialist.setProfilePicture(image);
-                specialist.setStatus(SpecialistStatus.AWAITING_CONFIRMATION);
+                // We no longer set status to AWAITING_CONFIRMATION here.
+                // VerificationService will handle it after email is verified.
             } catch (IOException e) {
                 throw new InvalidOperationException("Could not process the profile picture.");
             }
-        } else {
-            specialist.setStatus(SpecialistStatus.NEW_AWAITING_PICTURE);
         }
 
-        return specialistRepository.save(specialist);
+        Specialist savedSpecialist = specialistRepository.save(specialist);
+
+        // 3. Create and send verification token after specialist is saved
+        verificationService.createAndSendVerificationCode(savedSpecialist);
+
+        return savedSpecialist;
     }
 
     private byte[] readImageFromPath(String filePath) throws IOException {
@@ -75,6 +83,10 @@ public class SpecialistServiceImpl implements SpecialistService {
 
         if (specialist.getStatus() != SpecialistStatus.CONFIRMED) {
             throw new InvalidOperationException("Your account is not confirmed yet.");
+        }
+
+        if (!specialist.isEmailVerified()) {
+            throw new InvalidOperationException("Please verify your email before submitting suggestions.");
         }
 
         CustomerOrder order = orderRepository.findById(orderId)
@@ -115,6 +127,8 @@ public class SpecialistServiceImpl implements SpecialistService {
 
         return savedSuggestion;
     }
+
+    // ... All other methods in this class remain unchanged ...
 
     @Override
     @Transactional(readOnly = true)
@@ -163,7 +177,8 @@ public class SpecialistServiceImpl implements SpecialistService {
                 }
                 specialist.setProfilePicture(pictureBytes);
 
-                if (specialist.getStatus() == SpecialistStatus.NEW_AWAITING_PICTURE) {
+                // If email is already verified, now we can move to AWAITING_CONFIRMATION
+                if (specialist.isEmailVerified()) {
                     specialist.setStatus(SpecialistStatus.AWAITING_CONFIRMATION);
                 }
             } catch (IOException e) {
