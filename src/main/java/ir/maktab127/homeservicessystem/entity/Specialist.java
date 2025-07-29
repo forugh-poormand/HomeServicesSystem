@@ -1,5 +1,6 @@
 package ir.maktab127.homeservicessystem.entity;
 
+import ir.maktab127.homeservicessystem.entity.enums.Role;
 import ir.maktab127.homeservicessystem.entity.enums.SpecialistStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -51,6 +52,8 @@ public class Specialist extends Person {
         }
         return (double) totalScore / reviewCount;
     }
-
+    public Specialist(){
+        this.setRole(Role.ROLE_SPECIALIST);
+    }
 
 }

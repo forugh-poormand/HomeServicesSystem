@@ -1,5 +1,6 @@
 package ir.maktab127.homeservicessystem.entity;
 
+import ir.maktab127.homeservicessystem.entity.enums.Role;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -35,5 +36,9 @@ public abstract class Person {
 
     @Column(nullable = false)
     private boolean isEmailVerified=false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
 
 }

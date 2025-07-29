@@ -13,6 +13,7 @@ import ir.maktab127.homeservicessystem.exceptions.InvalidOperationException;
 import ir.maktab127.homeservicessystem.exceptions.ResourceNotFoundException;
 import ir.maktab127.homeservicessystem.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,20 +40,30 @@ public class CustomerServiceImpl implements CustomerService {
     private final SpecialistRepository specialistRepository;
     private final TransactionRepository transactionRepository;
     private final VerificationService verificationService;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public Customer register(UserRegistrationDto dto) {
         customerRepository.findByEmail(dto.email()).ifPresent(c -> {
             throw new DuplicateResourceException("Email already exists: " + dto.email());
         });
-        Customer customer = UserMapper.toCustomer(dto);
+
+
+        Customer customer = new Customer();
+        customer.setFirstName(dto.firstName());
+        customer.setLastName(dto.lastName());
+        customer.setEmail(dto.email());
+        customer.setPassword(passwordEncoder.encode(dto.password()));
+
         Wallet wallet = new Wallet();
         wallet.setBalance(BigDecimal.valueOf(1_000_000_000));
         walletRepository.save(wallet);
         customer.setWallet(wallet);
+
         Customer savedCustomer = customerRepository.save(customer);
 
         verificationService.createAndSendVerificationCode(savedCustomer);
+
         return savedCustomer;
     }
 

@@ -1,5 +1,6 @@
 package ir.maktab127.homeservicessystem.entity;
 
+import ir.maktab127.homeservicessystem.entity.enums.Role;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,4 +21,7 @@ public class Customer extends Person {
     @OneToMany (mappedBy = "customer")
     private Set<CustomerOrder> orders = new HashSet<>();
 
+    public Customer() {
+        this.setRole(Role.ROLE_CUSTOMER);
+    }
 }

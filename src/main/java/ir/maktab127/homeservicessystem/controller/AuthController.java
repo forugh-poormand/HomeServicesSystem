@@ -1,12 +1,16 @@
 package ir.maktab127.homeservicessystem.controller;
 
+import ir.maktab127.homeservicessystem.config.security.JwtService;
+import ir.maktab127.homeservicessystem.dto.LoginRequestDto;
+import ir.maktab127.homeservicessystem.dto.LoginResponseDto;
 import ir.maktab127.homeservicessystem.service.VerificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -14,16 +18,29 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final VerificationService verificationService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
 
-    /**
-     * Endpoint to verify a user's email address using a token.
-     * This is the link that would be sent to the user's email.
-     * @param token The verification token sent to the user.
-     * @return A confirmation message.
-     */
     @GetMapping("/verify")
     public ResponseEntity<String> verifyEmail(@RequestParam("token") String token) {
         String result = verificationService.verifyUser(token);
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDto> login(@RequestBody LoginRequestDto request) {
+        // Authenticate the user. If credentials are bad, an exception will be thrown.
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.email(),
+                        request.password()
+                )
+        );
+
+        // If authentication is successful, generate a token.
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String jwtToken = jwtService.generateToken(userDetails);
+
+        return ResponseEntity.ok(new LoginResponseDto(jwtToken));
     }
 }

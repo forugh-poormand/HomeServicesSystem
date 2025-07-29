@@ -10,6 +10,7 @@ import ir.maktab127.homeservicessystem.entity.enums.SpecialistStatus;
 import ir.maktab127.homeservicessystem.exceptions.*;
 import ir.maktab127.homeservicessystem.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,28 +34,35 @@ public class SpecialistServiceImpl implements SpecialistService {
     private final SuggestionRepository suggestionRepository;
     private final TransactionRepository transactionRepository;
     private final VerificationService verificationService; // <-- 1. Inject VerificationService
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public Specialist register(SpecialistRegistrationDto dto) {
         specialistRepository.findByEmail(dto.email()).ifPresent(s -> {
             throw new DuplicateResourceException("Email already exists: " + dto.email());
         });
-        Specialist specialist = UserMapper.toSpecialist(dto);
+
+        // We can no longer use the mapper directly as we need to encode the password
+        Specialist specialist = new Specialist();
+        specialist.setFirstName(dto.firstName());
+        specialist.setLastName(dto.lastName());
+        specialist.setEmail(dto.email());
+        // 2. Encode the password before setting it
+        specialist.setPassword(passwordEncoder.encode(dto.password()));
+
         Wallet wallet = new Wallet();
         specialist.setWallet(wallet);
 
-        // 2. Set initial status to NEW_AWAITING_PICTURE
+        // ... the rest of the method logic is correct ...
         specialist.setStatus(SpecialistStatus.NEW_AWAITING_PICTURE);
 
         if (dto.imagePath() != null && !dto.imagePath().isBlank()) {
             try {
                 byte[] image = readImageFromPath(dto.imagePath());
-                if (image.length > 300 * 1024) { // 300 KB
+                if (image.length > 300 * 1024) {
                     throw new ImageLengthOutOfBoundException("Image size cannot exceed 300 KB.");
                 }
                 specialist.setProfilePicture(image);
-                // We no longer set status to AWAITING_CONFIRMATION here.
-                // VerificationService will handle it after email is verified.
             } catch (IOException e) {
                 throw new InvalidOperationException("Could not process the profile picture.");
             }
@@ -62,11 +70,11 @@ public class SpecialistServiceImpl implements SpecialistService {
 
         Specialist savedSpecialist = specialistRepository.save(specialist);
 
-        // 3. Create and send verification token after specialist is saved
         verificationService.createAndSendVerificationCode(savedSpecialist);
 
         return savedSpecialist;
     }
+
 
     private byte[] readImageFromPath(String filePath) throws IOException {
         Path path = Paths.get(filePath);
