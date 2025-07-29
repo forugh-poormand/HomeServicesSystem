@@ -1,9 +1,7 @@
 package ir.maktab127.homeservicessystem.service;
 
-import ir.maktab127.homeservicessystem.dto.LoginRequestDto;
-import ir.maktab127.homeservicessystem.dto.MainServiceDto;
-import ir.maktab127.homeservicessystem.dto.SubServiceRequestDto;
-import ir.maktab127.homeservicessystem.dto.UserSearchCriteriaDto;
+import ir.maktab127.homeservicessystem.dto.*;
+import ir.maktab127.homeservicessystem.dto.mapper.OrderHistoryMapper;
 import ir.maktab127.homeservicessystem.entity.*;
 import ir.maktab127.homeservicessystem.entity.enums.OrderStatus;
 import ir.maktab127.homeservicessystem.entity.enums.SpecialistStatus;
@@ -11,6 +9,7 @@ import ir.maktab127.homeservicessystem.exceptions.DuplicateResourceException;
 import ir.maktab127.homeservicessystem.exceptions.InvalidOperationException;
 import ir.maktab127.homeservicessystem.exceptions.ResourceNotFoundException;
 import ir.maktab127.homeservicessystem.repository.*;
+import ir.maktab127.homeservicessystem.specifications.OrderSpecification;
 import ir.maktab127.homeservicessystem.specifications.UserSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
@@ -31,6 +30,7 @@ public class AdminServiceImpl implements AdminService {
     private final SubServiceRepository subServiceRepository;
     private final MainServiceRepository mainServiceRepository;
     private final SpecialistRepository specialistRepository;
+    private final CustomerOrderRepository orderRepository;
 
     @Override
     public MainService createMainService(MainServiceDto dto) {
@@ -128,6 +128,26 @@ public class AdminServiceImpl implements AdminService {
         }
 
         return results;
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderSummaryDto> searchOrderHistory(OrderHistoryFilterDto filterDto) {
+        // 2. Use the specification to find orders
+        Specification<CustomerOrder> spec = OrderSpecification.filterBy(filterDto);
+        List<CustomerOrder> orders = orderRepository.findAll(spec);
+
+        // 3. Map the results to the summary DTO
+        return orders.stream()
+                .map(OrderHistoryMapper::toSummaryDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderDetailDto getOrderDetails(Long orderId) {
+        CustomerOrder order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+        return OrderHistoryMapper.toDetailDto(order);
     }
 
 }

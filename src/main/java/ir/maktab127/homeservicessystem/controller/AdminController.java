@@ -1,27 +1,23 @@
 package ir.maktab127.homeservicessystem.controller;
 
-import ir.maktab127.homeservicessystem.dto.MainServiceDto;
-import ir.maktab127.homeservicessystem.dto.SubServiceRequestDto;
-import ir.maktab127.homeservicessystem.dto.UserResponseDto;
-import ir.maktab127.homeservicessystem.dto.UserSearchCriteriaDto;
+import ir.maktab127.homeservicessystem.dto.*;
 import ir.maktab127.homeservicessystem.dto.mapper.UserMapper;
 import ir.maktab127.homeservicessystem.service.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
-
+@RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
     private final AdminService adminService;
-    public AdminController(AdminService adminService) {
-        this.adminService = adminService;
-    }
 
     @PostMapping("/services/main")
     public ResponseEntity<?> createMainService(@RequestBody MainServiceDto dto) {
@@ -51,19 +47,24 @@ public class AdminController {
         adminService.assignSpecialistToSubService(specialistId, subServiceId);
         return ResponseEntity.ok("Specialist assigned to service successfully.");
     }
+
     @GetMapping("/users/search")
-    public ResponseEntity<List<UserResponseDto>> searchUsers(
-            @RequestParam(required = false) String role,
-            @RequestParam(required = false) String firstName,
-            @RequestParam(required = false) String lastName,
-            @RequestParam(required = false) Long subServiceId,
-            @RequestParam(required = false) Double minScore,
-            @RequestParam(required = false) Double maxScore
-    ) {
-        UserSearchCriteriaDto criteria = new UserSearchCriteriaDto(role, firstName, lastName, subServiceId, minScore, maxScore);
+    public ResponseEntity<List<UserResponseDto>> searchUsers(UserSearchCriteriaDto criteria) {
         List<UserResponseDto> users = adminService.searchUsers(criteria).stream()
                 .map(UserMapper::toUserResponseDto)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/orders/history")
+    public ResponseEntity<List<OrderSummaryDto>> searchOrderHistory(OrderHistoryFilterDto filterDto) {
+        List<OrderSummaryDto> history = adminService.searchOrderHistory(filterDto);
+        return ResponseEntity.ok(history);
+    }
+
+    @GetMapping("/orders/{id}/details")
+    public ResponseEntity<OrderDetailDto> getOrderDetails(@PathVariable Long id) {
+        OrderDetailDto details = adminService.getOrderDetails(id);
+        return ResponseEntity.ok(details);
     }
 }
