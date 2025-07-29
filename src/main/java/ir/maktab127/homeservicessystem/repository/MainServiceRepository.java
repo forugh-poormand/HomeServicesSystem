@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface MainServiceRepository extends JpaRepository<MainService, Long> {
-    public Optional<MainService> findByName(String name);
+    Optional<MainService> findByName(String name);
 }

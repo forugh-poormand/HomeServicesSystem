@@ -132,11 +132,11 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional(readOnly = true)
     public List<OrderSummaryDto> searchOrderHistory(OrderHistoryFilterDto filterDto) {
-        // 2. Use the specification to find orders
+
         Specification<CustomerOrder> spec = OrderSpecification.filterBy(filterDto);
         List<CustomerOrder> orders = orderRepository.findAll(spec);
 
-        // 3. Map the results to the summary DTO
+
         return orders.stream()
                 .map(OrderHistoryMapper::toSummaryDto)
                 .collect(Collectors.toList());

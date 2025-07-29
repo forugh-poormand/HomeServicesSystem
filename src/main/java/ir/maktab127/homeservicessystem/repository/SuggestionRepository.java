@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface SuggestionRepository extends JpaRepository<Suggestion, Long> {
-    public List<Suggestion> findByOrderId(Long orderId);
+   List<Suggestion> findByOrderId(Long orderId);
 
- public List<Suggestion> findBySpecialistId(Long specialistId);
+  List<Suggestion> findBySpecialistId(Long specialistId);
 }

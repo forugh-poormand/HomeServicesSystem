@@ -46,16 +46,16 @@ public class VerificationServiceImpl implements VerificationService {
             verificationTokenRepository.delete(verificationToken);
             throw new InvalidOperationException("verification token expired");
         }
-person.setEmailVerified(true);
+        person.setEmailVerified(true);
         if (person instanceof Specialist) {
             Specialist specialist = (Specialist) person;
-            if(specialist.getProfilePicture()!=null){
+            if (specialist.getProfilePicture() != null) {
                 specialist.setStatus(SpecialistStatus.AWAITING_CONFIRMATION);
                 specialistRepository.save(specialist);
-            }else {
+            } else {
                 personRepository.save(person);
             }
-        }else {
+        } else {
             personRepository.save(person);
         }
         verificationTokenRepository.delete(verificationToken);

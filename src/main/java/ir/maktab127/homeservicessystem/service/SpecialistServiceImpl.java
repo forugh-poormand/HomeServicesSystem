@@ -42,18 +42,18 @@ public class SpecialistServiceImpl implements SpecialistService {
             throw new DuplicateResourceException("Email already exists: " + dto.email());
         });
 
-        // We can no longer use the mapper directly as we need to encode the password
+
         Specialist specialist = new Specialist();
         specialist.setFirstName(dto.firstName());
         specialist.setLastName(dto.lastName());
         specialist.setEmail(dto.email());
-        // 2. Encode the password before setting it
+
         specialist.setPassword(passwordEncoder.encode(dto.password()));
 
         Wallet wallet = new Wallet();
         specialist.setWallet(wallet);
 
-        // ... the rest of the method logic is correct ...
+
         specialist.setStatus(SpecialistStatus.NEW_AWAITING_PICTURE);
 
         if (dto.imagePath() != null && !dto.imagePath().isBlank()) {
@@ -136,7 +136,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         return savedSuggestion;
     }
 
-    // ... All other methods in this class remain unchanged ...
+
 
     @Override
     @Transactional(readOnly = true)

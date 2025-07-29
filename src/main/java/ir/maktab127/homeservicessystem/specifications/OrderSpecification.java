@@ -41,7 +41,7 @@ public class OrderSpecification {
             if (filterDto.endDate() != null) {
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(
                         root.get("completionDate"),
-                        filterDto.endDate().plusDays(1).atStartOfDay() // To include the whole end day
+                        filterDto.endDate().plusDays(1).atStartOfDay()
                 ));
             }
 

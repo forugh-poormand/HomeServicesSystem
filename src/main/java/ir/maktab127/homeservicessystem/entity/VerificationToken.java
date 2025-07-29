@@ -30,6 +30,6 @@ public class VerificationToken {
     public VerificationToken(String token, Person person) {
         this.token = token;
         this.person = person;
-        this.expiryDate = LocalDateTime.now().plusMinutes(30);
+        this.expiryDate = LocalDateTime.now().plusMinutes(60);
     }
 }

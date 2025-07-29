@@ -28,7 +28,7 @@ public class OrderHistoryMapper {
                 order.getSubService().getName(),
                 order.getStatus(),
                 order.getCompletionDate(),
-                order.getProposedPrice() // Assuming this is the final price for summary
+                order.getProposedPrice()
         );
     }
 
