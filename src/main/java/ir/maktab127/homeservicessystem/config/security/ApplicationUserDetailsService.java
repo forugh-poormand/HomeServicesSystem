@@ -15,9 +15,9 @@ public class ApplicationUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // We find the user by their email from our database.
+
         return personRepository.findByEmail(email)
-                .map(SecurityUser::new) // Convert our Person to a SecurityUser
+                .map(SecurityUser::new)
                 .orElseThrow(() -> new UsernameNotFoundException("No user found with email: " + email));
     }
 }

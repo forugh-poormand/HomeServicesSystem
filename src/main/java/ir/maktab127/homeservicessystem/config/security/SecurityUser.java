@@ -13,42 +13,24 @@ import java.util.Collections;
 public class SecurityUser implements UserDetails {
 
     private final Person person;
-
+    public Long getId() {
+        return person.getId();
+    }
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // We convert our Role enum to a SimpleGrantedAuthority that Spring Security understands.
         return Collections.singleton(new SimpleGrantedAuthority(person.getRole().name()));
     }
 
     @Override
-    public String getPassword() {
-        return person.getPassword();
-    }
-
+    public String getPassword() { return person.getPassword(); }
     @Override
-    public String getUsername() {
-        // We use email as the username.
-        return person.getEmail();
-    }
-
+    public String getUsername() { return person.getEmail(); }
     @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
+    public boolean isAccountNonExpired() { return true; }
     @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
+    public boolean isAccountNonLocked() { return true; }
     @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
+    public boolean isCredentialsNonExpired() { return true; }
     @Override
-    public boolean isEnabled() {
-        // A user is enabled only if their email is verified.
-        return person.isEmailVerified();
-    }
+    public boolean isEnabled() { return person.isEmailVerified(); }
 }

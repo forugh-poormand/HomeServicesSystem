@@ -29,18 +29,11 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(@RequestBody LoginRequestDto request) {
-        // Authenticate the user. If credentials are bad, an exception will be thrown.
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.email(),
-                        request.password()
-                )
+                new UsernamePasswordAuthenticationToken(request.email(), request.password())
         );
-
-        // If authentication is successful, generate a token.
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String jwtToken = jwtService.generateToken(userDetails);
-
         return ResponseEntity.ok(new LoginResponseDto(jwtToken));
     }
 }

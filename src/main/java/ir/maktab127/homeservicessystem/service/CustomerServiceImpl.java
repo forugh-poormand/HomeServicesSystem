@@ -293,4 +293,25 @@ public class CustomerServiceImpl implements CustomerService {
 
         return transactionRepository.save(transaction);
     }
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderResponseDto> getOrderHistory(Long customerId, OrderStatus status) {
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + customerId));
+
+        return customer.getOrders().stream()
+                .filter(order -> status == null || order.getStatus() == status) // Filter by status if provided
+                .map(OrderMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WalletDto getWalletBalance(Long customerId) {
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + customerId));
+
+        Wallet wallet = customer.getWallet();
+        return new WalletDto(wallet.getId(), wallet.getBalance());
+    }
 }

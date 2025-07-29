@@ -2,6 +2,8 @@ package ir.maktab127.homeservicessystem.service;
 
 import ir.maktab127.homeservicessystem.dto.*;
 import ir.maktab127.homeservicessystem.entity.*;
+import ir.maktab127.homeservicessystem.entity.enums.OrderStatus;
+
 import java.util.List;
 
 public interface CustomerService {
@@ -16,4 +18,6 @@ public interface CustomerService {
     Comment leaveComment(Long customerId, Long orderId, CommentRequestDto dto);
     UserResponseDto updateProfile(Long customerId, UserProfileUpdateDto dto);
     Transaction chargeWallet(Long customerId, ChargeRequestDto dto);
+    List<OrderResponseDto> getOrderHistory(Long customerId, OrderStatus status);
+    WalletDto getWalletBalance(Long customerId);
 }

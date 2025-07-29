@@ -19,7 +19,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // Enables method-level security like @PreAuthorize
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -36,11 +36,7 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    /**
-     * Configures the data access object (DAO) for authentication.
-     * It binds the user details service and the password encoder.
-     * @return The configured authentication provider.
-     */
+
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -49,35 +45,24 @@ public class SecurityConfig {
         return authProvider;
     }
 
-    /**
-     * Defines the security filter chain that configures HTTP security.
-     * @param http The HttpSecurity object to configure.
-     * @return The configured SecurityFilterChain.
-     * @throws Exception if an error occurs.
-     */
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Disable CSRF as we are using stateless JWT authentication
+
                 .csrf(csrf -> csrf.disable())
-                // Define authorization rules for HTTP requests
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints that do not require authentication
                         .requestMatchers(
                                 "/api/auth/**",
-                                "/register", // Customer registration
-                                "/api/specialists/register", // Specialist registration
-                                "/services", // Viewing all services
-                                "/payment/captcha" // Getting captcha for payment page
+                                "/register",
+                                "/api/specialists/register",
+                                "/services",
+                                "/payment/captcha"
                         ).permitAll()
-                        // All other requests must be authenticated
                         .anyRequest().authenticated()
                 )
-                // Configure session management to be stateless
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // Set the custom authentication provider
                 .authenticationProvider(authenticationProvider())
-                // Add our custom JWT filter before the standard username/password filter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
