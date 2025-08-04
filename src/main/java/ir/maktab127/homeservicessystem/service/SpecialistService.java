@@ -4,8 +4,6 @@ import ir.maktab127.homeservicessystem.dto.*;
 import ir.maktab127.homeservicessystem.entity.CustomerOrder;
 import ir.maktab127.homeservicessystem.entity.Specialist;
 import ir.maktab127.homeservicessystem.entity.Suggestion;
-import ir.maktab127.homeservicessystem.entity.Transaction;
-import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface SpecialistService {

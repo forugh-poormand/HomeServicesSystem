@@ -300,7 +300,7 @@ public class CustomerServiceImpl implements CustomerService {
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + customerId));
 
         return customer.getOrders().stream()
-                .filter(order -> status == null || order.getStatus() == status) // Filter by status if provided
+                .filter(order -> status == null || order.getStatus() == status)
                 .map(OrderMapper::toDto)
                 .collect(Collectors.toList());
     }

@@ -48,14 +48,16 @@ public class CustomerController {
 
     @PutMapping("/{customerId}/orders/{orderId}/select-suggestion/{suggestionId}")
     @PreAuthorize("hasRole('CUSTOMER') and #customerId == authentication.principal.id")
-    public ResponseEntity<OrderResponseDto> selectSuggestion(@PathVariable Long customerId, @PathVariable Long orderId, @PathVariable Long suggestionId) {
+    public ResponseEntity<OrderResponseDto> selectSuggestion(@PathVariable Long customerId,
+                                                             @PathVariable Long orderId, @PathVariable Long suggestionId) {
         return ResponseEntity.ok(customerService.selectSuggestion(customerId, orderId, suggestionId));
     }
 
 
     @GetMapping("/{customerId}/orders/history")
     @PreAuthorize("hasRole('CUSTOMER') and #customerId == authentication.principal.id")
-    public ResponseEntity<List<OrderResponseDto>> getOrderHistory(@PathVariable Long customerId, @RequestParam(required = false) OrderStatus status) {
+    public ResponseEntity<List<OrderResponseDto>> getOrderHistory(@PathVariable Long customerId,
+                                                                  @RequestParam(required = false) OrderStatus status) {
         return ResponseEntity.ok(customerService.getOrderHistory(customerId, status));
     }
 

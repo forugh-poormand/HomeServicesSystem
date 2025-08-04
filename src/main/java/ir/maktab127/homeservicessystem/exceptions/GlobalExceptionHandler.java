@@ -45,6 +45,6 @@ public class GlobalExceptionHandler {
                 errors.put(error.getField(), error.getDefaultMessage()));
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
-
+   //for other exp
     public record ErrorResponse(int statusCode, String message, LocalDateTime timestamp) {}
 }
