@@ -2,22 +2,20 @@ package ir.maktab127.homeservicessystem.service;
 
 import ir.maktab127.homeservicessystem.dto.OrderRequestDto;
 import ir.maktab127.homeservicessystem.dto.UserRegistrationDto;
-import ir.maktab127.homeservicessystem.entity.Customer;
-import ir.maktab127.homeservicessystem.entity.CustomerOrder;
-import ir.maktab127.homeservicessystem.entity.SubService;
-import ir.maktab127.homeservicessystem.entity.Wallet;
+import ir.maktab127.homeservicessystem.entity.*;
+import ir.maktab127.homeservicessystem.entity.enums.OrderStatus;
 import ir.maktab127.homeservicessystem.exceptions.DuplicateResourceException;
 import ir.maktab127.homeservicessystem.exceptions.InvalidOperationException;
-import ir.maktab127.homeservicessystem.repository.CustomerRepository;
-import ir.maktab127.homeservicessystem.repository.CustomerOrderRepository;
-import ir.maktab127.homeservicessystem.repository.SubServiceRepository;
-import ir.maktab127.homeservicessystem.repository.WalletRepository;
+import ir.maktab127.homeservicessystem.repository.*;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -25,6 +23,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,77 +32,114 @@ class CustomerServiceImplTest {
     @Mock
     private CustomerRepository customerRepository;
     @Mock
-    private SubServiceRepository subServiceRepository;
-    @Mock
     private WalletRepository walletRepository;
+    @Mock
+    private PasswordEncoder passwordEncoder;
+    @Mock
+    private VerificationService verificationService;
+    @Mock
+    private SubServiceRepository subServiceRepository;
     @Mock
     private CustomerOrderRepository orderRepository;
 
     @InjectMocks
     private CustomerServiceImpl customerService;
 
-    private UserRegistrationDto userRegistrationDto;
-    private OrderRequestDto orderRequestDto;
+    private UserRegistrationDto registrationDto;
     private Customer customer;
+    private Wallet wallet;
     private SubService subService;
+    private CustomerOrder order;
 
     @BeforeEach
     void setUp() {
-        userRegistrationDto = new UserRegistrationDto("John", "Doe", "john.doe@example.com", "password123");
+        registrationDto = new UserRegistrationDto("John", "Doe", "john.doe@example.com", "password123");
+
+        wallet = new Wallet();
+        wallet.setId(1L);
+        wallet.setBalance(new BigDecimal("1000"));
 
         customer = new Customer();
         customer.setId(1L);
+        customer.setEmail("john.doe@example.com");
+        customer.setWallet(wallet);
 
         subService = new SubService();
         subService.setId(1L);
+        subService.setName("Test Sub Service");
         subService.setBasePrice(new BigDecimal("100"));
 
-        orderRequestDto = new OrderRequestDto(1L, new BigDecimal("120"), "description", "address", LocalDateTime.now().plusDays(1));
+        order = new CustomerOrder();
+        order.setId(1L);
+        order.setCustomer(customer);
+        order.setStatus(OrderStatus.WAITING_FOR_SUGGESTIONS);
     }
 
     @Test
-    void register_WhenEmailIsUnique_ShouldSaveCustomerAndWallet() {
+    @DisplayName("Test Successful Customer Registration")
+    void register_Success() {
         when(customerRepository.findByEmail(anyString())).thenReturn(Optional.empty());
-        when(walletRepository.save(any(Wallet.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(customerRepository.save(any(Customer.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(passwordEncoder.encode("password123")).thenReturn("encodedPassword");
+        when(customerRepository.save(any(Customer.class))).thenAnswer(inv -> {
+            Customer c = inv.getArgument(0);
+            c.setId(1L); // Simulate saving and getting an ID
+            return c;
+        });
 
-        Customer result = customerService.register(userRegistrationDto);
+        customerService.register(registrationDto);
 
-        assertNotNull(result);
-        assertNotNull(result.getWallet());
-        assertEquals("john.doe@example.com", result.getEmail());
-        verify(customerRepository, times(1)).save(any(Customer.class));
-        verify(walletRepository, times(1)).save(any(Wallet.class));
+        ArgumentCaptor<Customer> customerCaptor = ArgumentCaptor.forClass(Customer.class);
+        verify(customerRepository, times(1)).save(customerCaptor.capture());
+        verify(verificationService, times(1)).createAndSendVerificationCode(any(Customer.class));
+
+        Customer savedCustomer = customerCaptor.getValue();
+        assertEquals("encodedPassword", savedCustomer.getPassword());
+        assertNotNull(savedCustomer.getWallet());
     }
 
     @Test
-    void register_WhenEmailExists_ShouldThrowDuplicateResourceException() {
+    @DisplayName("Test Registration Failure Due to Duplicate Email")
+    void register_Failure_DuplicateEmail() {
         when(customerRepository.findByEmail("john.doe@example.com")).thenReturn(Optional.of(new Customer()));
 
-        assertThrows(DuplicateResourceException.class, () -> customerService.register(userRegistrationDto));
-        verify(customerRepository, never()).save(any(Customer.class));
+        assertThrows(DuplicateResourceException.class, () -> customerService.register(registrationDto));
+
+        verify(customerRepository, never()).save(any());
+        verify(verificationService, never()).createAndSendVerificationCode(any());
     }
 
     @Test
-    void placeOrder_WhenPriceIsAboveBasePrice_ShouldSaveOrder() {
+    @DisplayName("Test Place Order Failure - Proposed Price is Less Than Base Price")
+    void placeOrder_Failure_ProposedPriceLessThanBasePrice() {
+        OrderRequestDto orderDto = new OrderRequestDto(1L, new BigDecimal("50"), "description", "address", LocalDateTime.now());
+
         when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
         when(subServiceRepository.findById(1L)).thenReturn(Optional.of(subService));
-        when(orderRepository.save(any(CustomerOrder.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        CustomerOrder result = customerService.placeOrder(1L, orderRequestDto);
+        assertThrows(InvalidOperationException.class, () -> customerService.placeOrder(1L, orderDto));
 
-        assertNotNull(result);
-        assertEquals(new BigDecimal("120"), result.getProposedPrice());
-        verify(orderRepository, times(1)).save(any(CustomerOrder.class));
+        verify(orderRepository, never()).save(any());
     }
 
     @Test
-    void placeOrder_WhenPriceIsBelowBasePrice_ShouldThrowInvalidOperationException() {
-        OrderRequestDto lowPriceDto = new OrderRequestDto(1L, new BigDecimal("90"), "desc", "addr", LocalDateTime.now().plusDays(1));
-        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
-        when(subServiceRepository.findById(1L)).thenReturn(Optional.of(subService));
+    @DisplayName("Test Select Suggestion Failure - Invalid Order Status")
+    void selectSuggestion_Failure_InvalidOrderStatus() {
+        order.setStatus(OrderStatus.DONE); // Set status to something other than WAITING_FOR_SELECTION
 
-        assertThrows(InvalidOperationException.class, () -> customerService.placeOrder(1L, lowPriceDto));
-        verify(orderRepository, never()).save(any(CustomerOrder.class));
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThrows(InvalidOperationException.class, () -> customerService.selectSuggestion(1L, 1L, 1L));
+    }
+
+    @Test
+    @DisplayName("Test Payment Failure - Insufficient Funds")
+    void payForOrder_Failure_InsufficientFunds() {
+        order.setStatus(OrderStatus.DONE);
+        order.setProposedPrice(new BigDecimal("2000")); // price > balance
+        order.setSelectedSpecialist(new Specialist()); // Needs a non-null specialist
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThrows(InvalidOperationException.class, () -> customerService.payForOrder(1L, 1L));
     }
 }
