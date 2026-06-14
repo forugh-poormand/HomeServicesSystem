@@ -242,9 +242,6 @@ public class CustomerServiceImpl implements CustomerService {
         comment.setScore(dto.score());
         comment.setText(dto.text());
         Comment savedComment = commentRepository.save(comment);
-        specialist.setTotalScore(specialist.getTotalScore() + dto.score());
-        specialist.setReviewCount(specialist.getReviewCount() + 1);
-        specialistRepository.save(specialist);
         return savedComment;
     }
 
@@ -260,7 +257,9 @@ public class CustomerServiceImpl implements CustomerService {
         });
 
         customer.setEmail(dto.email());
-        customer.setPassword(dto.password());
+        if (dto.password() != null && !dto.password().isBlank()) {
+            customer.setPassword(passwordEncoder.encode(dto.password()));
+        }
         return UserMapper.toUserResponseDto(customerRepository.save(customer));
     }
 
