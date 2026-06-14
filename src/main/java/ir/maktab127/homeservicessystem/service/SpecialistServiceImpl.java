@@ -174,7 +174,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         }
 
         if (dto.password() != null && !dto.password().isBlank()) {
-            specialist.setPassword(dto.password());
+            specialist.setPassword(passwordEncoder.encode(dto.password()));
         }
 
         if (dto.imagePath() != null && !dto.imagePath().isBlank()) {
