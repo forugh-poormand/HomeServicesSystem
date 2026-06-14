@@ -59,6 +59,6 @@ public class VerificationServiceImpl implements VerificationService {
             personRepository.save(person);
         }
         verificationTokenRepository.delete(verificationToken);
-        return "Email verified successfully. You can login now";
+        return "Email verified successfully. You can now login.";
     }
 }
