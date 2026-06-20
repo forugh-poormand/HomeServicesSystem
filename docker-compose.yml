@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: hss_postgres
+    environment:
+      POSTGRES_DB: hss_db
+      POSTGRES_USER: hss_user
+      POSTGRES_PASSWORD: hss_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - hss_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hss_user -d hss_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: hss_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/hss_db
+      DB_USERNAME: hss_user
+      DB_PASSWORD: hss_password
+      JWT_SECRET_KEY: YXZlcnlsb25nYW5kc2VjdXJlc2VjcmV0a2V5dGhhdGlzYXRsZWFzdDI1NmJpdHNsb25n
+      APP_BASE_URL: http://localhost:8080
+
+volumes:
+  hss_postgres_data:
